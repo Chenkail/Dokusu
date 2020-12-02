@@ -30,6 +30,32 @@ class Sudoku:
         ], dtype=np.uint8)
         return Sudoku(board)
 
+    def sample16():
+        a, b, c, d, e, f, g = range(10, 17)
+
+        board = np.array([
+            [d, 3, 8, 0, 0, g, 0, 7, 0, 0, 0, 0, 0, 1, 2, a],
+            [g, 0, 0, f, 0, 5, 0, a, 1, 6, 2, 3, e, 7, 0, 0],
+            [2, 0, 4, 0, f, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0],
+            [0, 7, 0, 0, 0, 0, 0, 9, 8, e, g, a, f, 4, 0, 0],
+            
+            [0, 0, e, 0, 9, d, 3, f, 0, 0, 1, 0, 0, b, a, 0],
+            [a, g, 0, 0, 5, 4, 8, 0, b, d, e, 6, 2, 0, 0, f],
+            [0, 0, 0, 0, 6, c, 0, 0, 0, 0, 8, 0, 0, d, 0, 0],
+            [b, 4, 0, d, g, 0, 0, 2, 0, a, f, 0, 6, 0, 0, 0],
+            
+            [0, c, d, 8, 0, f, 0, 0, a, g, 6, 0, 7, 0, 9, 1],
+            [0, a, 0, 4, 0, 6, 0, c, f, 2, 9, e, 5, 0, 0, 8],
+            [0, 2, 0, b, a, 8, g, 3, 5, 7, d, 0, 0, 6, f, 4],
+            [0, 5, 0, 6, 0, 7, 0, 0, 0, 8, 0, b, g, a, 0, e],
+            
+            [0, 8, 0, g, 0, b, 0, d, e, 1, 0, 5, a, 9, 0, 0],
+            [5, 1, 0, 7, c, 0, e, 0, 0, 0, b, 8, d, f, 0, 3],
+            [9, 0, 6, 0, 8, 0, 0, 0, d, 0, 4, 0, 0, 0, g, 0],
+            [4, 0, 0, 0, 0, 9, 0, 0, g, 3, a, f, 0, 5, 0, 0],
+        ], dtype=np.uint8)
+        return Sudoku(board)
+
     def solve(self) -> np.ndarray:
         board = self.board.copy()
         board_size = board.shape[0]
@@ -216,7 +242,7 @@ def main():
     docstring
     """
     
-    sudoku = Sudoku.sample()
+    sudoku = Sudoku.sample16()
     # sudoku = Sudoku.from_numpy(<np array here>)
 
     solved = sudoku.solve()
