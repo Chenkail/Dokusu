@@ -1,4 +1,6 @@
+import math
 from pathlib import Path
+
 import numpy as np
 
 
@@ -28,15 +30,45 @@ class Sudoku:
         ], dtype=np.uint8)
         return Sudoku(board)
 
+    @staticmethod
+    def sample16():
+        a, b, c, d, e, f, g = range(10, 17)
+
+        board = np.array([
+            [d, 3, 8, 0, 0, g, 0, 7, 0, 0, 0, 0, 0, 1, 2, a],
+            [g, 0, 0, f, 0, 5, 0, a, 1, 6, 2, 3, e, 7, 0, 0],
+            [2, 0, 4, 0, f, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0],
+            [0, 7, 0, 0, 0, 0, 0, 9, 8, e, g, a, f, 4, 0, 0],
+            
+            [0, 0, e, 0, 9, d, 3, f, 0, 0, 1, 0, 0, b, a, 0],
+            [a, g, 0, 0, 5, 4, 8, 0, b, d, e, 6, 2, 0, 0, f],
+            [0, 0, 0, 0, 6, c, 0, 0, 0, 0, 8, 0, 0, d, 0, 0],
+            [b, 4, 0, d, g, 0, 0, 2, 0, a, f, 0, 6, 0, 0, 0],
+            
+            [0, c, d, 8, 0, f, 0, 0, a, g, 6, 0, 7, 0, 9, 1],
+            [0, a, 0, 4, 0, 6, 0, c, f, 2, 9, e, 5, 0, 0, 8],
+            [0, 2, 0, b, a, 8, g, 3, 5, 7, d, 0, 0, 6, f, 4],
+            [0, 5, 0, 6, 0, 7, 0, 0, 0, 8, 0, b, g, a, 0, e],
+            
+            [0, 8, 0, g, 0, b, 0, d, e, 1, 0, 5, a, 9, 0, 0],
+            [5, 1, 0, 7, c, 0, e, 0, 0, 0, b, 8, d, f, 0, 3],
+            [9, 0, 6, 0, 8, 0, 0, 0, d, 0, 4, 0, 0, 0, g, 0],
+            [4, 0, 0, 0, 0, 9, 0, 0, g, 3, a, f, 0, 5, 0, 0],
+        ], dtype=np.uint8)
+        return Sudoku(board)
+
     def solve(self) -> np.ndarray:
         board = self.board.copy()
+        board_size = board.shape[0]
 
-        board_possibilities = np.ones((9, 9, 9), dtype=bool)
+        board_possibilities = np.ones((board_size, board_size, board_size), dtype=bool)
 
         return Sudoku.recursive_solving(board, board_possibilities)
 
     @staticmethod
     def recursive_solving(board, possibilities, indent=""):
+        board_size = board.shape[0]
+        
         stuck = False
         while not stuck:
             pre_reduction = possibilities.copy()
@@ -57,7 +89,7 @@ class Sudoku:
             # possiblitities didn't change
             stuck = (pre_reduction == possibilities).all()
 
-        possibilities = np.ones((9, 9, 9), dtype=bool)
+        possibilities = np.ones((board_size, board_size, board_size), dtype=bool)
         possibilities = Sudoku.possibilities_reduction(board, possibilities)
         # pick cell with least possible options
         cell_options_counts = possibilities.sum(axis=2)
@@ -96,6 +128,9 @@ class Sudoku:
         known cell values based on a set of rules.
         """
 
+        board_size = possibilities.shape[0]
+        block_size = int(math.sqrt(board_size))
+
         cell_options_counts = possibilities.sum(axis=2)
 
         # Cells with only one option
@@ -104,7 +139,7 @@ class Sudoku:
         # TODO: find a nice way to do this with numpy stuff
 
         # TODO: these 3 parts could be converted into one with a list [*rows, *columns, *boxes]
-        for row_i in range(9):
+        for row_i in range(board_size):
             row = possibilities[row_i]
             # (count of X, )
             row_counts = row.sum(axis=0)
@@ -112,7 +147,7 @@ class Sudoku:
                 location = np.nonzero(row[:, X])
                 board[row_i][location] = X
 
-        for col_i in range(9):
+        for col_i in range(board_size):
             col = possibilities[:, col_i]
             # (count of X, )
             col_counts = col.sum(axis=0)
@@ -120,7 +155,10 @@ class Sudoku:
                 location = np.nonzero(col[:, X])
                 board[:, col_i][location] = X
 
-        groups = [slice(0,3), slice(3,6), slice(6,9)]
+        groups = []
+        for i in range(block_size):
+            groups.append(slice(i*block_size, (i+1)*block_size))
+
         for group_i in groups:
             for group_j in groups:
                 box = possibilities[(group_i, group_j)]
@@ -139,25 +177,31 @@ class Sudoku:
 
     @staticmethod
     def board_valid(board):
-        # TODO:
+        board_size = board.shape[0]
+        block_size = int(math.sqrt(board_size))
+
         if not Sudoku.board_done(board):
             return False
 
-        numbers = np.arange(1, 10)
+        numbers = np.arange(1, board_size+1)
 
-        for row_i in range(9):
+        for row_i in range(board_size):
             row = board[row_i]
             values, counts = np.unique(row, return_counts=True)
             if (values.tolist() != numbers.tolist()) or (counts != 1).any():
                 return False
 
-        for col_i in range(9):
+        for col_i in range(board_size):
             col = board[row_i]
             values, counts = np.unique(col, return_counts=True)
             if (values.tolist() != numbers.tolist()) or (counts != 1).any():
                 return False
 
-        groups = [slice(0,3), slice(3,6), slice(6,9)]
+        groups = []
+        for i in range(block_size):
+            groups.append(slice(i*block_size, (i+1)*block_size))
+
+
         for group_i in groups:
             for group_j in groups:
                 box = board[group_i, group_j]
@@ -169,14 +213,17 @@ class Sudoku:
     
     @staticmethod
     def possibilities_reduction(board, board_possibilities):
+        board_size = board.shape[0]
+        block_size = int(math.sqrt(board_size)) 
+        
         # for all the non-zero cells,
         for y, x in np.argwhere(board != 0):
             value = board[y, x]
 
-            # remove that cell's value from 3x3 block options
-            g_x = (x // 3)*3 # group x [0 - 2]
-            g_y = (y // 3)*3 # group y [0 - 2]
-            board_possibilities[g_y:g_y+3, g_x:g_x+3, value-1] = False
+            # remove that cell's value from NxN block options
+            g_x = (x // block_size)*block_size # group x [0 - 2]
+            g_y = (y // block_size)*block_size # group y [0 - 2]
+            board_possibilities[g_y:g_y+block_size, g_x:g_x+block_size, value-1] = False
 
             # remove that cell's value from row options
             board_possibilities[y, :, value-1] = False
@@ -196,12 +243,12 @@ def main():
     docstring
     """
     
-    sudoku = Sudoku.sample()
+    sudoku = Sudoku.sample16()
     # sudoku = Sudoku.from_numpy(<np array here>)
 
-    #solved = sudoku.solve()
+    solved = sudoku.solve()
 
-    #print(solved) # np array (9, 9)
+    print(solved) # np array (9, 9)
 
 
 if __name__ == "__main__":
