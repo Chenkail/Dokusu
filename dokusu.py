@@ -128,11 +128,10 @@ class Sudoku:
                 location = np.nonzero(col[:, X])
                 board[:, col_i][location] = X
 
-        # TODO: REFACTOR
         groups = []
         for i in range(block_size):
             groups.append(slice(i*block_size, (i+1)*block_size))
-        # groups = [slice(0,3), slice(3,6), slice(6,9)]
+
         for group_i in groups:
             for group_j in groups:
                 box = possibilities[(group_i, group_j)]
@@ -171,11 +170,9 @@ class Sudoku:
             if (values.tolist() != numbers.tolist()) or (counts != 1).any():
                 return False
 
-        # TODO: REFACTOR
         groups = []
         for i in range(block_size):
             groups.append(slice(i*block_size, (i+1)*block_size))
-        # groups = [slice(0,3), slice(3,6), slice(6,9)]
 
 
         for group_i in groups:
