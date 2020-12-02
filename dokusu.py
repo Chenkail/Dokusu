@@ -1,4 +1,6 @@
+import math
 from pathlib import Path
+
 import numpy as np
 
 
@@ -30,13 +32,16 @@ class Sudoku:
 
     def solve(self) -> np.ndarray:
         board = self.board.copy()
+        board_size = board.shape[0]
 
-        board_possibilities = np.ones((9, 9, 9), dtype=bool)
+        board_possibilities = np.ones((board_size, board_size, board_size), dtype=bool)
 
         return Sudoku.recursive_solving(board, board_possibilities)
 
     @staticmethod
     def recursive_solving(board, possibilities, indent=""):
+        board_size = board.shape[0]
+        
         stuck = False
         while not stuck:
             pre_reduction = possibilities.copy()
@@ -57,7 +62,7 @@ class Sudoku:
             # possiblitities didn't change
             stuck = (pre_reduction == possibilities).all()
 
-        possibilities = np.ones((9, 9, 9), dtype=bool)
+        possibilities = np.ones((board_size, board_size, board_size), dtype=bool)
         possibilities = Sudoku.possibilities_reduction(board, possibilities)
         # pick cell with least possible options
         cell_options_counts = possibilities.sum(axis=2)
@@ -96,6 +101,9 @@ class Sudoku:
         known cell values based on a set of rules.
         """
 
+        board_size = possibilities.shape[0]
+        block_size = int(math.sqrt(board_size))
+
         cell_options_counts = possibilities.sum(axis=2)
 
         # Cells with only one option
@@ -104,7 +112,7 @@ class Sudoku:
         # TODO: find a nice way to do this with numpy stuff
 
         # TODO: these 3 parts could be converted into one with a list [*rows, *columns, *boxes]
-        for row_i in range(9):
+        for row_i in range(board_size):
             row = possibilities[row_i]
             # (count of X, )
             row_counts = row.sum(axis=0)
@@ -112,7 +120,7 @@ class Sudoku:
                 location = np.nonzero(row[:, X])
                 board[row_i][location] = X
 
-        for col_i in range(9):
+        for col_i in range(board_size):
             col = possibilities[:, col_i]
             # (count of X, )
             col_counts = col.sum(axis=0)
@@ -120,7 +128,11 @@ class Sudoku:
                 location = np.nonzero(col[:, X])
                 board[:, col_i][location] = X
 
-        groups = [slice(0,3), slice(3,6), slice(6,9)]
+        # TODO: REFACTOR
+        groups = []
+        for i in range(block_size):
+            groups.append(slice(i*block_size, (i+1)*block_size))
+        # groups = [slice(0,3), slice(3,6), slice(6,9)]
         for group_i in groups:
             for group_j in groups:
                 box = possibilities[(group_i, group_j)]
@@ -139,25 +151,33 @@ class Sudoku:
 
     @staticmethod
     def board_valid(board):
-        # TODO:
+        board_size = board.shape[0]
+        block_size = int(math.sqrt(board_size))
+
         if not Sudoku.board_done(board):
             return False
 
-        numbers = np.arange(1, 10)
+        numbers = np.arange(1, board_size+1)
 
-        for row_i in range(9):
+        for row_i in range(board_size):
             row = board[row_i]
             values, counts = np.unique(row, return_counts=True)
             if (values.tolist() != numbers.tolist()) or (counts != 1).any():
                 return False
 
-        for col_i in range(9):
+        for col_i in range(board_size):
             col = board[row_i]
             values, counts = np.unique(col, return_counts=True)
             if (values.tolist() != numbers.tolist()) or (counts != 1).any():
                 return False
 
-        groups = [slice(0,3), slice(3,6), slice(6,9)]
+        # TODO: REFACTOR
+        groups = []
+        for i in range(block_size):
+            groups.append(slice(i*block_size, (i+1)*block_size))
+        # groups = [slice(0,3), slice(3,6), slice(6,9)]
+
+
         for group_i in groups:
             for group_j in groups:
                 box = board[group_i, group_j]
@@ -169,14 +189,17 @@ class Sudoku:
     
     @staticmethod
     def possibilities_reduction(board, board_possibilities):
+        board_size = board.shape[0]
+        block_size = int(math.sqrt(board_size)) 
+        
         # for all the non-zero cells,
         for y, x in np.argwhere(board != 0):
             value = board[y, x]
 
-            # remove that cell's value from 3x3 block options
-            g_x = (x // 3)*3 # group x [0 - 2]
-            g_y = (y // 3)*3 # group y [0 - 2]
-            board_possibilities[g_y:g_y+3, g_x:g_x+3, value-1] = False
+            # remove that cell's value from NxN block options
+            g_x = (x // block_size)*block_size # group x [0 - 2]
+            g_y = (y // block_size)*block_size # group y [0 - 2]
+            board_possibilities[g_y:g_y+block_size, g_x:g_x+block_size, value-1] = False
 
             # remove that cell's value from row options
             board_possibilities[y, :, value-1] = False
@@ -199,9 +222,9 @@ def main():
     sudoku = Sudoku.sample()
     # sudoku = Sudoku.from_numpy(<np array here>)
 
-    #solved = sudoku.solve()
+    solved = sudoku.solve()
 
-    #print(solved) # np array (9, 9)
+    print(solved) # np array (9, 9)
 
 
 if __name__ == "__main__":
