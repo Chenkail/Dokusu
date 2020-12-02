@@ -30,6 +30,7 @@ class Sudoku:
         ], dtype=np.uint8)
         return Sudoku(board)
 
+    @staticmethod
     def sample16():
         a, b, c, d, e, f, g = range(10, 17)
 
