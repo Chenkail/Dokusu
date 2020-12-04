@@ -11,9 +11,25 @@ class Sudoku:
 
     @staticmethod
     def from_file(path):
-        # TODO: implement more comprehensive file loading
-        board = np.genfromtxt(path, delimiter=',', dtype=int)
-        return Sudoku(board)
+        # TODO: (possibly) implement more comprehensive file loading (multiple filetypes?)
+
+        f = open(path)
+        lines = f.readlines()
+        f.close()
+
+        lines = filter(lambda line: line.strip() != '#' and len(line.strip()) > 0, lines)
+
+        def remap(s):
+            s = s.strip().lower()
+            if s.isnumeric():
+                return int(s)
+            elif len(s) == 1 and 'a' <= s <= 'z':
+                return ord(s) - ord('a') + 10
+            else:
+                raise Exception(f"couldn't figure out what '{s}' is")
+
+        rows = [list(map(remap, line.split(','))) for line in lines]
+        return Sudoku(np.array(rows, dtype=np.uint8))
     
     @staticmethod
     def sample():
@@ -32,30 +48,7 @@ class Sudoku:
 
     @staticmethod
     def sample16():
-        a, b, c, d, e, f, g = range(10, 17)
-
-        board = np.array([
-            [d, 3, 8, 0, 0, g, 0, 7, 0, 0, 0, 0, 0, 1, 2, a],
-            [g, 0, 0, f, 0, 5, 0, a, 1, 6, 2, 3, e, 7, 0, 0],
-            [2, 0, 4, 0, f, 0, 0, 0, 7, 0, 0, 0, 0, 0, 3, 0],
-            [0, 7, 0, 0, 0, 0, 0, 9, 8, e, g, a, f, 4, 0, 0],
-            
-            [0, 0, e, 0, 9, d, 3, f, 0, 0, 1, 0, 0, b, a, 0],
-            [a, g, 0, 0, 5, 4, 8, 0, b, d, e, 6, 2, 0, 0, f],
-            [0, 0, 0, 0, 6, c, 0, 0, 0, 0, 8, 0, 0, d, 0, 0],
-            [b, 4, 0, d, g, 0, 0, 2, 0, a, f, 0, 6, 0, 0, 0],
-            
-            [0, c, d, 8, 0, f, 0, 0, a, g, 6, 0, 7, 0, 9, 1],
-            [0, a, 0, 4, 0, 6, 0, c, f, 2, 9, e, 5, 0, 0, 8],
-            [0, 2, 0, b, a, 8, g, 3, 5, 7, d, 0, 0, 6, f, 4],
-            [0, 5, 0, 6, 0, 7, 0, 0, 0, 8, 0, b, g, a, 0, e],
-            
-            [0, 8, 0, g, 0, b, 0, d, e, 1, 0, 5, a, 9, 0, 0],
-            [5, 1, 0, 7, c, 0, e, 0, 0, 0, b, 8, d, f, 0, 3],
-            [9, 0, 6, 0, 8, 0, 0, 0, d, 0, 4, 0, 0, 0, g, 0],
-            [4, 0, 0, 0, 0, 9, 0, 0, g, 3, a, f, 0, 5, 0, 0],
-        ], dtype=np.uint8)
-        return Sudoku(board)
+        return Sudoku.from_file('sample16.csv')
 
     def solve(self) -> np.ndarray:
         board = self.board.copy()
