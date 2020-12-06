@@ -9,6 +9,8 @@ The following code solves the built-in sample puzzle and prints the solution:
 
 .. code:: python
 
+    from dokusu.dokusu import Sudoku
+
     sudoku = Sudoku.sample()
     solved = sudoku.solve()
     print(solved)
