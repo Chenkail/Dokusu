@@ -1,7 +1,4 @@
 # Dokusu
 
-Dokusu is a library for solving sudoku puzzles.
+Dokusu is a library for solving sudoku puzzles. Documentation available at https://dokusu.readthedocs.io/
 
-## Testing
-
-To test with a sample puzzle, run the following code:

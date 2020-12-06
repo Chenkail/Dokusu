@@ -11,7 +11,7 @@ setuptools.setup(
     description="A library for solving sudoku puzzles",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/Chenkail/Dokusu",
+    url="https://github.com/Chenkail/dokusu",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
