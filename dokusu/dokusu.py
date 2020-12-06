@@ -59,7 +59,7 @@ class Sudoku:
 
     @staticmethod
     def sample16():
-        return Sudoku.from_file('sample16.csv')
+        return Sudoku.from_file('./sample_puzzles/sample16.csv')
 
     def solve(self):
         """

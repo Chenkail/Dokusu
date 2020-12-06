@@ -9,6 +9,10 @@ python setup.py sdist bdist_wheel
 if "%1%"=="test" goto test
 :pypi
 python -m twine upload dist/*
+goto end
 
 :test
 python -m twine upload --repository testpypi dist/*
+goto end
+
+:end
