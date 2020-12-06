@@ -1,12 +1,32 @@
 import math
-from pathlib import Path
 
 import numpy as np
+
+class Rule:
+    pass
+
+class UniqueRule(Rule):
+    def __init__(self, indices):
+        self.indices = indices
+
+    def reduce_possibilities(self, sudoku):
+        # (N=row,)
+        b_subset = sudoku.board(self.indices)
+        # (N=row, N=possibilities)
+        p_subset = sudoku.possibilities(self.indices)
+        # indices of possibilities (dim=1) to filter out
+        to_remove = b_subset[b_subset != 0] - 1
+        # disable possibilities [at empty cells] [for existing values]
+        p_subset[b_subset == 0][:, to_remove] = False
+
+
+    def find_solvable(self, sudoku):
+        pass
 
 
 class Sudoku:
 
-    def __init__(self, board, possibilities=None):
+    def __init__(self, board, possibilities=None, rules=None):
         self.board_size = board.shape[0]
         self.block_size = int(np.sqrt(self.board_size)) 
         self.start_board = board.copy()
@@ -16,6 +36,12 @@ class Sudoku:
                     (self.board_size, self.board_size, self.board_size), dtype=bool)
         else:
             self.possibilities = possibilities
+
+        self.rules = Sudoku.base_rules(self.board_size)
+
+    @staticmethod
+    def base_rules(board_size):
+        pass
 
     @staticmethod
     def from_file(path):
