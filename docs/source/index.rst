@@ -6,3 +6,4 @@ Dokusu documentation
    :maxdepth: 2
    
    installation
+   quickstart
