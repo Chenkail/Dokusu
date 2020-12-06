@@ -18,4 +18,10 @@ The following code solves the built-in sample puzzle and prints the solution:
 Importing Puzzles
 =================
 
-To import a puzzle, call the ``from_file()`` method.
+To import a puzzle, call the ``from_file()`` method. For example, to import from a file called "puzzle.csv", we would write the following:
+
+.. code:: python
+
+    from dokusu.dokusu import Sudoku
+
+    sudoku = Sudoku.from_file("puzzle.csv")
