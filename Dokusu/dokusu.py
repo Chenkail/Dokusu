@@ -3,25 +3,107 @@ import math
 import numpy as np
 
 class Rule:
-    pass
+    def reduce_possibilities(self, sudoku):
+        raise NotImplementedError
+
+    def find_solvable(self, sudoku):
+        raise NotImplementedError
+
+    def verify(self, sudoku):
+        raise NotImplementedError
 
 class UniqueRule(Rule):
     def __init__(self, indices):
         self.indices = indices
 
     def reduce_possibilities(self, sudoku):
-        # (N=row,)
-        b_subset = sudoku.board(self.indices)
-        # (N=row, N=possibilities)
-        p_subset = sudoku.possibilities(self.indices)
-        # indices of possibilities (dim=1) to filter out
-        to_remove = b_subset[b_subset != 0] - 1
-        # disable possibilities [at empty cells] [for existing values]
-        p_subset[b_subset == 0][:, to_remove] = False
+        board_subset = sudoku.board[self.indices]
+        possibilities_subset = sudoku.possibilities[self.indices]
 
+        # disable possibilities [at empty cells] [for existing values]
+        board_indices = np.nonzero(board_subset == 0)
+
+        # indices of possibilities (dim=1) to filter out
+        to_remove = board_subset[board_subset != 0] - 1
+
+        for remove_possibility in to_remove:
+            possibilities_subset[(*board_indices, remove_possibility)] = False
+
+    def find_solvable(self, sudoku):
+        #board = sudoku.board.copy()
+        # (3=row, 3=col)
+        b_subset = sudoku.board[self.indices]
+        # (3=row, 3=col, N=possibilities)
+        p_subset = sudoku.possibilities[self.indices]
+
+        axes = tuple(range(len(b_subset.shape)))
+        counts = p_subset.sum(axis=axes)
+
+        slices = tuple(slice(None) for _ in axes)
+        for X in np.argwhere(counts == 1).flatten():
+            location = np.nonzero(p_subset[(*slices, X)])
+            sudoku.board[self.indices][location] = X + 1
+
+    def verify(self, sudoku):
+        target = set(range(sudoku.board_size))
+        actual = set(sudoku.board[self.indices].flatten() + 1)
+        return target != actual
+
+    def __repr__(self):
+        return f'UniqueRule: {self.indices}'
+
+
+class SingleRule(Rule):
+    def reduce_possibilities(self, sudoku):
+        nonzero_cells = sudoku.board != 0
+        nonzero_cell_values = sudoku.board[nonzero_cells]
+        indices = nonzero_cell_values - 1
+        before = sudoku.possibilities[nonzero_cells, indices]
+        sudoku.possibilities[nonzero_cells] = False
+        sudoku.possibilities[nonzero_cells, indices] = before
+
+    def find_solvable(self, sudoku):
+        counts = sudoku.possibilities.sum(axis=-1)
+        sudoku.board = np.where(counts == 1, sudoku.possibilities.argmax(axis=-1)+1, sudoku.board)
+
+    def verify(self, sudoku):
+        return True
+        
+class AntiKnightRule(Rule):
+    # TODO: anti-knight can probably be done by offsetting the entire board at once or something
+
+    KNIGHT_MOVES = np.array([
+        [1, 2],
+        [1, -2],
+        [-1, 2],
+        [-1, -2],
+        [2, 1],
+        [2, -1],
+        [-2, 1],
+        [-2, -1],
+    ])
+
+    def reduce_possibilities(self, sudoku):
+        rows, cols = sudoku.board.shape
+        for cell in np.argwhere(sudoku.board != 0):
+            value = sudoku.board[tuple(cell)]
+            for move in self.KNIGHT_MOVES:
+                i, j = cell + move
+                if 0 <= i < rows and 0 <= j < cols:
+                    sudoku.possibilities[i, j, value-1] = False
 
     def find_solvable(self, sudoku):
         pass
+
+    def verify(self, sudoku):
+        rows, cols = sudoku.board.shape
+        for cell in np.argwhere(sudoku.board != 0):
+            value = sudoku.board[tuple(cell)]
+            for move in self.KNIGHT_MOVES:
+                i, j = cell + move
+                if 0 <= i < rows and 0 <= j < cols and sudoku.board[i, j] == value:
+                    return False
+        return True
 
 
 class Sudoku:
@@ -37,11 +119,25 @@ class Sudoku:
         else:
             self.possibilities = possibilities
 
-        self.rules = Sudoku.base_rules(self.board_size)
+        if rules is None:
+            self.rules = Sudoku.base_rules(self.board_size, self.block_size)
+        else:
+            self.rules = rules
 
     @staticmethod
-    def base_rules(board_size):
-        pass
+    def base_rules(board_size, block_size):
+        def select_box(block):
+            x, y = block%block_size, block//block_size
+            return slice(block_size*y, block_size*(y+1)), slice(block_size*x, block_size*(x+1))
+        return [
+            SingleRule()
+        ] + [
+            UniqueRule(row) for row in range(board_size)
+        ] + [
+            UniqueRule((slice(None), col)) for col in range(board_size)
+        ] + [
+            UniqueRule(select_box(box)) for box in range(board_size)
+        ]
 
     @staticmethod
     def from_file(path):
@@ -87,7 +183,14 @@ class Sudoku:
     def sample16():
         return Sudoku.from_file('sample16.csv')
 
-    def solve(self):
+    def copy(self):
+        return Sudoku(
+            self.board.copy(),
+            self.possibilities.copy(),
+            self.rules,
+        )
+
+    def solve(self, log_guessing=False, log_indent=""):
         """
         Solve the current sudoku puzzle.
 
@@ -108,20 +211,23 @@ class Sudoku:
                 else:
                     return None
             
-            # stuck when possiblitities didn't change
+            # stuck when possibilities didn't change
             stuck = (pre_reduction == self.possibilities).all()
 
         cell, possible_values = self.pick_guess()
 
         # try all the possible values for the guess cell
         for value in possible_values:
-            new_board = self.board.copy()
-            new_board[cell] = value
+            if log_guessing:
+                print(f'{log_indent}guessing {value} for {cell}')
 
-            guess_sudoku = Sudoku(new_board, self.possibilities.copy())
-            result = guess_sudoku.solve()
+            guess_sudoku = self.copy()
+            guess_sudoku.board[cell] = value
+
+            result = guess_sudoku.solve(log_guessing, log_indent+" ")
             if result is not None:
-                self.board = result
+                self.board = guess_sudoku.board
+                self.possibilities = guess_sudoku.possibilities
                 return result
             
             self.possibilities[(*cell, value-1)] = False
@@ -161,44 +267,10 @@ class Sudoku:
             np.ndarray of shape (N, N)
         """
 
-        cell_options_counts = self.possibilities.sum(axis=2)
+        for rule in self.rules:
+            rule.find_solvable(self)
 
-        # Cells with only one option
-        board = np.where(cell_options_counts == 1, self.possibilities.argmax(axis=2), -1)
-
-        # TODO: find a nice way to do this with numpy stuff
-        
-        # TODO: these 3 parts could be converted into one with a list [*rows, *columns, *boxes]
-        for row_i in range(self.board_size):
-            row = self.possibilities[row_i]
-            # (count of X, )
-            row_counts = row.sum(axis=0)
-            for X in np.argwhere(row_counts == 1).flatten():
-                location = np.nonzero(row[:, X])
-                board[row_i][location] = X
-
-        for col_i in range(self.board_size):
-            col = self.possibilities[:, col_i]
-            # (count of X, )
-            col_counts = col.sum(axis=0)
-            for X in np.argwhere(col_counts == 1).flatten():
-                location = np.nonzero(col[:, X])
-                board[:, col_i][location] = X
-
-        groups = []
-        for i in range(self.block_size):
-            groups.append(slice(i*self.block_size, (i+1)*self.block_size))
-
-        for group_i in groups:
-            for group_j in groups:
-                box = self.possibilities[(group_i, group_j)]
-                # (count of X, )
-                box_counts = box.sum(axis=(0,1))
-                for X in np.argwhere(box_counts == 1).flatten():
-                    location = np.nonzero(box[:, :, X])
-                    board[(group_i, group_j)][location] = X
-
-        return board + 1
+        return self.board
 
 
     def board_done(self):
@@ -216,6 +288,13 @@ class Sudoku:
         """
         if not self.board_done():
             return False
+
+        for rule in self.rules:
+            if not rule.verify(sudoku):
+                print(f'failed rule {rule}')
+                return False
+
+        return True
 
         numbers = np.arange(1, self.board_size+1)
 
@@ -252,38 +331,24 @@ class Sudoku:
         Returns:
             reduced copy of self.possibilities
         """
-        possibilities = self.possibilities.copy()
-        
-        # for all the non-zero cells,
-        for y, x in np.argwhere(self.board != 0):
-            value = self.board[y, x]
 
-            # remove that cell's value from NxN block options
-            g_x = (x // self.block_size)*self.block_size # group x [0 - 2]
-            g_y = (y // self.block_size)*self.block_size # group y [0 - 2]
-            possibilities[g_y:g_y+self.block_size, g_x:g_x+self.block_size, value-1] = False
+        for rule in self.rules:
+            rule.reduce_possibilities(self)
 
-            # remove that cell's value from row options
-            possibilities[y, :, value-1] = False
+        return self.possibilities
 
-            # remove that cell's value from col options
-            possibilities[:, x, value-1] = False
 
-            # that cell's options are only that value
-            possibilities[y, x] = False
-            possibilities[y, x, value-1] = True
-
-        return possibilities
-
+sudoku = Sudoku.sample()
 
 def main():
     
-    sudoku = Sudoku.sample16()
+    #sudoku = Sudoku.sample16()
     # sudoku = Sudoku.from_numpy(<np array here>)
 
-    solved = sudoku.solve()
+    #solved = sudoku.solve()
 
-    print(solved) # np array (9, 9)
+    #print(solved) # np array (9, 9)
+    pass
 
 
 if __name__ == "__main__":
