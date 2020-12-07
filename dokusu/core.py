@@ -104,7 +104,7 @@ class Sudoku:
 
             if self.board_done():
                 if self.board_valid():
-                    return self.board
+                    return self
                 else:
                     return None
             
@@ -187,7 +187,7 @@ class Sudoku:
             return False
 
         for rule in self.rules:
-            if not rule.verify(sudoku):
+            if not rule.verify(self):
                 print(f'failed rule {rule}')
                 return False
 
@@ -234,8 +234,31 @@ class Sudoku:
 
         return self.possibilities
 
+    def __repr__(self):
+        split_parts = self.board_size // self.block_size
 
-sudoku = Sudoku.sample()
+        def cell_repr(value):
+            if value == 0:
+                return '□'
+            if value > 9:
+                return chr(ord('A') - 10 + value)
+            return str(value)
+
+        def cell_block_repr(cell_block):
+            return ' '.join(cell_repr(value) for value in cell_block)
+
+        def row_repr(row):
+            return '  '.join(cell_block_repr(cell_block)
+                    for cell_block in np.split(row, split_parts))
+
+        def row_block_repr(row_block):
+            return '\n'.join(row_repr(row) for row in row_block)
+
+        return '\n\n'.join(row_block_repr(row_block)
+                for row_block in np.split(self.board, split_parts))
+
+
+#sudoku = Sudoku.sample()
 
 def main():
     

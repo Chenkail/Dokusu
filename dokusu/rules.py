@@ -68,7 +68,11 @@ class UniqueRule(Rule):
             return len(set(flat)) == len(flat)
 
     def __repr__(self):
-        return f'UniqueRule: {self.subset}'
+        strong = '' if self.strong else ', strong=False'
+        if self.slice is not None:
+            return f'UniqueRule({self.slice}{strong})'
+        else:
+            return f'UniqueRule(indices={self.indices}{strong})'
 
 
 class SingleRule(Rule):
