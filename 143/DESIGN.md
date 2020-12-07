@@ -4,7 +4,7 @@
 
 ### Representing Board State
 
-We chose to use numpy for handling the state of board possibilities because the tools provided by numpy allow for easy and efficient manipulation of large multidimensional arrays. This allowed us to use shortcuts such as quickly finding which cell has the fewest remaining possibilities.
+We chose to use numpy for handling the state of board possibilities because the tools provided by numpy allow for easy and efficient manipulation of large multidimensional arrays. This allowed us to use shortcuts such as quickly finding which cell has the fewest remaining possibilities, or filtering to only find the cells containing a specific value.
 
 ### Algorithm for Solving
 

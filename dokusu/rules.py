@@ -5,7 +5,7 @@ class Rule:
         raise NotImplementedError
 
     def find_solvable(self, sudoku):
-        raise NotImplementedError
+        pass
 
     def verify(self, sudoku):
         raise NotImplementedError
