@@ -6,7 +6,7 @@ The library supports defining your own rules for more complicated sudoku puzzles
 
 .. code:: python
 
-    from dokusu.dokusu import *
+    from dokusu import *
 
     sudoku = Sudoku.from_file('anti-knight.csv')
     sudoku.rules.append(AntiKnightRule())
