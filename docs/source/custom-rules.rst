@@ -2,7 +2,7 @@
 Custom Rules
 ************
 
-The library supports defining your own rules for more complicated sudoku puzzles. For example, in anti-knight sudoku, a number cannot occur a (chess) knight's move away from another instance of that number. Each ``Rule`` object must implement two methods: ``reduce_possibilities`` and ``verify``. There is a third method, ``find_solvable``, which is optional, but can be used to help optimize searching for solutions. Suppose we wanted to implement a rule that each of the two diagonals on the board had to also contain each number once. We could implement it like this:
+The library supports defining your own rules for more complicated sudoku puzzles. For example, in anti-knight sudoku, a number cannot occur a (chess) knight's move away from another instance of that number. Each ``Rule`` object must implement two methods: ``reduce_possibilities`` and ``verify``. ``reduce_possibilities`` is used to trim the solution space based on the rule, while ``verify`` checks if the current board state violates the rule. There is a third method, ``find_solvable``, which is optional, but can be used to help optimize searching for solutions. Suppose we wanted to implement a rule that each of the two diagonals on the board had to also contain each number once. We could implement it like this:
 
 .. code:: python
 
