@@ -46,6 +46,8 @@ class Sudoku:
         Read a sudoku puzzle from a file
         """
 
+        # TODO: Add import for exported files
+
         # TODO: (possibly) implement more comprehensive file loading (multiple filetypes?)
         f = open(path)
         lines = f.readlines()
