@@ -2,7 +2,8 @@ from pathlib import Path
 
 import numpy as np
 
-from rules import *
+from . import rules
+from .rules import *
 
 DOKUSU_DIR = Path(__file__).parent.parent
 EXPORT_DIR = DOKUSU_DIR / "exports"
@@ -278,24 +279,3 @@ class Sudoku:
         
         with open(EXPORT_DIR / filename, "w+") as out:
             out.write(str(self.board))
-
-
-def main():
-    sudoku = Sudoku.sample()
-    # sudoku.export("puzzle.txt")
-    # sudoku = Sudoku.from_numpy(<np array here>)
-
-    solved = sudoku.solve()
-    # solved.export("solution.txt")
-
-    print(solved) # np array (9, 9)
-    
-    key = Sudoku.from_file("sample_puzzles/sample_solution.csv")
-    key.board[0][0] = 1
-    print(solved.compare(key))
-
-    pass
-
-
-if __name__ == "__main__":
-    main()
