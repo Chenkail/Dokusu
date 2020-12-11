@@ -1,6 +1,6 @@
-********
+*****
 Rules
-********
+*****
 
 .. autoclass:: dokusu.Rule
     :members:
