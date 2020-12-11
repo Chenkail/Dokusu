@@ -2,8 +2,6 @@
 Rules
 ********
 
-testing
-
 .. autoclass:: dokusu.Rule
     :members:
 
