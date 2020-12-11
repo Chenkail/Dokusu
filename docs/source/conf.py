@@ -12,8 +12,7 @@
 
 import os
 import sys
-import dokusu
-sys.path.insert(0, os.path.abspath('../../dokusu/'))
+sys.path.insert(os.path.abspath('../../dokusu/'))
 
 
 # -- Project information -----------------------------------------------------
