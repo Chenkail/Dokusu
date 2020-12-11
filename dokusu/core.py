@@ -2,7 +2,7 @@ from pathlib import Path
 
 import numpy as np
 
-from . import rules
+
 from .rules import *
 
 DOKUSU_DIR = Path(__file__).parent.parent
@@ -25,6 +25,7 @@ class Sudoku:
             self.rules = Sudoku.base_rules(self.board_size, self.block_size)
         else:
             self.rules = rules
+
 
     @staticmethod
     def base_rules(board_size, block_size):
@@ -94,7 +95,14 @@ class Sudoku:
             self.rules,
         )
 
-    def solve(self, log_guessing=False, log_indent=""):
+    def reset(self):
+        self.possibilities = np.ones(
+                (self.board_size, self.board_size, self.board_size), dtype=bool)
+        self.board = self.start_board
+
+
+    def solve(self, log_guessing=False, log_indent="",
+              extended_depth=0, on_cell_update=None):
         """
         Solve the current sudoku puzzle.
 
@@ -102,64 +110,129 @@ class Sudoku:
             np.ndarray of shape (N, N) representing the solution or None if no solution found
         """
         
-        stuck = False
-        while not stuck:
-            pre_reduction = self.possibilities.copy()
-            self.possibilities = self.possibilities_reduction()
+        solved = self.solve_until_stuck(on_cell_update, extended=False)
+        if solved:
+            return self
 
-            self.board = self.find_solvable()
+        if not self.board_valid():
+            return None
+        if self.board_done():
+            self.full_redraw(on_cell_update)
+            return self
 
+        while True:
+            solved = self.solve_until_stuck(on_cell_update, extended=(extended_depth>0))
+            if solved:
+                return self
+
+            if not self.board_valid():
+                return None
             if self.board_done():
-                if self.board_valid():
-                    return self
-                else:
-                    return None
-            
-            # stuck when possibilities didn't change
-            stuck = (pre_reduction == self.possibilities).all()
+                self.full_redraw(on_cell_update)
+                return self
 
-        cell, possible_values = self.pick_guess()
+            # at this point, we're stuck and need a guess
 
-        # try all the possible values for the guess cell
-        for value in possible_values:
-            if log_guessing:
-                print(f'{log_indent}guessing {value} for {cell}')
+            restriction = self.calculate_restriction()
 
-            guess_sudoku = self.copy()
-            guess_sudoku.board[cell] = value
+            guess = self.pick_guess()
+            result = self.take_guess(guess, log_guessing, log_indent+' ', extended_depth-1,
+                                     on_cell_update)
 
-            result = guess_sudoku.solve(log_guessing, log_indent+" ")
             if result is not None:
-                self.board = guess_sudoku.board
-                self.possibilities = guess_sudoku.possibilities
+                self.board = result.board
+                self.possibilities = result.possibilities
+                self.full_redraw(on_cell_update)
                 return result
             
-            self.possibilities[(*cell, value-1)] = False
+            self.possibilities[guess] = False
+            if self.possibilities[guess[:2]].max() == False:
+                return None
+
+            self.full_redraw(on_cell_update)
         
         return None
+
+    def solve_until_stuck(self, on_cell_update, extended=False):
+        
+        # return False if it got stuck/failed,
+        # return True if it solved it
+        stuck = False
+        while not stuck:
+            stuck = self.solve_step(on_cell_update, extended=extended)
+
+            if not self.board_valid():
+                return False
+            if self.board_done():
+                self.full_redraw(on_cell_update)
+                return True
+
+        return False
+
+
+    def solve_step(self, on_cell_update=None, extended=False):
+        pre_possibilities = self.possibilities.copy()
+        self.possibilities_reduction(extended=extended)
+        if on_cell_update is not None:
+            for pos in np.argwhere((self.board == 0) & 
+                    (self.possibilities != pre_possibilities).max(-1)):
+                on_cell_update(self, pos)
+
+        pre_board = self.board.copy()
+        self.board = self.find_solvable()
+        if on_cell_update is not None:
+            for pos in np.argwhere(self.board != pre_board):
+                on_cell_update(self, pos)
+
+        return (pre_possibilities == self.possibilities).all()
+
+
+    def full_redraw(self, on_cell_update=None):
+        if on_cell_update is not None:
+            for pos in np.argwhere(self.board > -1):
+                on_cell_update(self, pos)
+
+    
+    def calculate_restriction(self):
+        restriction = np.zeros_like(self.possibilities, dtype=float)
+        for rule in self.rules:
+            rule.restriction_estimate(self, restriction)
+
+        restriction += np.random.rand(*restriction.shape) * 0.01 # slight randomness
+        restriction *= self.possibilities * (self.board == 0).reshape(9, 9, 1)
+        return restriction
+
 
     def pick_guess(self):
         """
         Pick a cell to guess for when we run out of steam with the base algorithm.
 
         Returns:
-            (cell, possible_values)
-            where `cell` is an (i, j) tuple and `possible_values` is a list of values that cell
-            could potentially have.
+            3-tuple representing the possibility to guess.
         """
-        # pick cell with least possible options
-        cell_options_counts = self.possibilities.sum(axis=2)
-        relevant_cells = np.argwhere(cell_options_counts > 1)
 
-        # if there's no options for a cell, we broke the puzzle
-        if cell_options_counts.min() == 0:
-            return None, []
+        restriction = self.calculate_restriction()
+        return np.unravel_index(restriction.ravel().argmax(), restriction.shape)
 
-        min_index = cell_options_counts[(*relevant_cells.T, )].argmin()
-        cell = tuple(relevant_cells[min_index])
-        possible_values = np.argwhere(self.possibilities[cell]).flatten() + 1
+    def take_guess(self, guess, log_guessing=False, log_indent="",
+                   extended_depth=0, on_cell_update=None):
+        """
+        Solve the sudoku with an assumed square.
+        """
+        i, j, p_index = guess
+        if log_guessing:
+            print(f'{log_indent}guess: {p_index+1} at {(i, j)}')
+    
+        guess_sudoku = self.copy()
+        guess_sudoku.board[i, j] = p_index + 1
 
-        return cell, possible_values
+        if on_cell_update is not None:
+            on_cell_update(guess_sudoku, (i, j), guess=True)
+
+        result = guess_sudoku.solve(log_guessing, log_indent+" ", extended_depth, 
+                                    on_cell_update)
+
+        return result
     
 
     def find_solvable(self):
@@ -183,52 +256,25 @@ class Sudoku:
         """
         return self.board.min() > 0
 
-    def board_valid(self):
+    def board_valid(self, verbose=False):
         """
         Check whether or not the current board state is a valid solution.
 
         Theoretically, it could be done with a simple check on `self.possibilities`, but
         then this method wouldn't be able to catch any issues with it.
         """
-        if not self.board_done():
-            return False
+        #if not self.board_done():
+            #return False
 
         for rule in self.rules:
             if not rule.verify(self):
-                print(f'failed rule {rule}')
+                if verbose:
+                    print(f'failed rule {rule}')
                 return False
-
-        return True
-
-        numbers = np.arange(1, self.board_size+1)
-
-        # TODO: Same as in `find_solvable`, these three sections can definitely be combined
-        for row_i in range(self.board_size):
-            row = self.board[row_i]
-            values, counts = np.unique(row, return_counts=True)
-            if (values.tolist() != numbers.tolist()) or (counts != 1).any():
-                return False
-
-        for col_i in range(self.board_size):
-            col = self.board[row_i]
-            values, counts = np.unique(col, return_counts=True)
-            if (values.tolist() != numbers.tolist()) or (counts != 1).any():
-                return False
-
-        groups = []
-        for i in range(self.block_size):
-            groups.append(slice(i*self.block_size, (i+1)*self.block_size))
-
-        for group_i in groups:
-            for group_j in groups:
-                box = self.board[group_i, group_j]
-                values, counts = np.unique(box, return_counts=True)
-                if (values.tolist() != numbers.tolist()) or (counts != 1).any():
-                    return False
 
         return True
     
-    def possibilities_reduction(self):
+    def possibilities_reduction(self, extended=False):
         """
         Filter down all the possibilities for each cell based on sudoku rules.
 
@@ -237,7 +283,7 @@ class Sudoku:
         """
 
         for rule in self.rules:
-            rule.reduce_possibilities(self)
+            rule.reduce_possibilities(self, extended=extended)
 
         return self.possibilities
 
