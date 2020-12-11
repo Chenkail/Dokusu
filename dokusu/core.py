@@ -219,7 +219,7 @@ class Sudoku:
         Tries to solve the sudoku puzzle until it gets stuck
 
         Args:
-            on_cell_update -- Method to call whenever a cell is updated. See
+            on_cell_update:-- Method to call whenever a cell is updated. See
                               'Animating the Solver' in docs for usage details
             extended:bool  -- Flag controlling extended reduction usage.
 
@@ -245,7 +245,7 @@ class Sudoku:
         Tries to solve the sudoku puzzle until it gets stuck
 
         Args:
-            on_cell_update -- Method to call whenever a cell is updated. See
+            on_cell_update:-- Method to call whenever a cell is updated. See
                               'Animating the Solver' in docs for usage details
             extended:bool  -- Flag controlling extended reduction usage.
 
