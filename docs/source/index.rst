@@ -1,14 +1,14 @@
 ********************
-Dokusu documentation
+Dokusu Documentation
 ********************
 
 .. toctree::
    :maxdepth: 2
    
-   installation
-   quickstart
-   custom-rules
-   animating
-   sudoku
-   rules
+   user-guide/installation
+   user-guide/quickstart
+   user-guide/custom-rules
+   user-guide/animating
+   classes/sudoku
+   classes/rules
 
