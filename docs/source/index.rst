@@ -9,4 +9,5 @@ Dokusu documentation
    quickstart
    custom-rules
    animating
+   Sudoku
 

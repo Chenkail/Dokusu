@@ -13,6 +13,9 @@ if not os.path.isdir(EXPORT_DIR):
     os.mkdir(EXPORT_DIR)
 
 class Sudoku:
+    """
+    A sudoku puzzle, with any (N^2, N^2) shape or any rule sets.
+    """
 
     def __init__(self, board:np.ndarray, possibilities:np.ndarray=None, rules:list=None):
         """
