@@ -2,4 +2,5 @@
 Asdf
 ********
 
-.. automodule:: dokusu
+
+.. autoclass:: dokusu.Sudoku
