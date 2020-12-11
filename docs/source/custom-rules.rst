@@ -38,7 +38,7 @@ For example, to define a rule saying that a certain cell must be greater than a 
         def verify(self, sudoku):
             return sudoku.board[self.cell_a] > sudoku.board[self.cell_b]
 
-After defining a rule, simply you can add it to the Sudoku object with ``Sudoku.rules.append()``.
+After defining a rule, add it to the Sudoku object with ``Sudoku.rules.append()``.
 
 .. code:: python
 
@@ -88,7 +88,7 @@ this using ``UniqueRule``:
     solved = sudoku.solve()
     print(solved)
 
-There are two variant rules implemented at the moment:
+The library currently has two variant rules already built in:
  - ``AntiKnightRule``, where a number isn't allowed to be a knight's move away from another of itself
  - ``KillerCageRule``, where a cage is defined as a group of cells with a target sum. Within cages, digits
    may not repeat and must sum to the target sum.
