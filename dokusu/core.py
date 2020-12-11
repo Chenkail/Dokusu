@@ -1,7 +1,12 @@
+from pathlib import Path
+
 import numpy as np
+
 
 from .rules import *
 
+DOKUSU_DIR = Path(__file__).parent.parent
+EXPORT_DIR = DOKUSU_DIR / "exports"
 
 class Sudoku:
 
@@ -42,6 +47,8 @@ class Sudoku:
         """
         Read a sudoku puzzle from a file
         """
+
+        # TODO: Add import for exported files
 
         # TODO: (possibly) implement more comprehensive file loading (multiple filetypes?)
         f = open(path)
@@ -304,19 +311,17 @@ class Sudoku:
                 for row_block in np.split(self.board, split_parts))
 
 
-#sudoku = Sudoku.sample()
+    def compare(self, other):
+        """
+        Compares two Sudoku objects and returns true if they have the same board state
+        """
 
+        return np.array_equal(self.board, other.board)
 
-def main():
-    
-    sudoku = Sudoku.sample()
-    # sudoku = Sudoku.from_numpy(<np array here>)
-
-    solved = sudoku.solve()
-
-    print(solved) # np array (9, 9)
-    pass
-
-
-if __name__ == "__main__":
-    main()
+    def export(self, filename="export.txt"):
+        """
+        Exports game board to a text file
+        """
+        
+        with open(EXPORT_DIR / filename, "w+") as out:
+            out.write(str(self.board))

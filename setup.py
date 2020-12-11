@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="dokusu",
-    version="0.0.3",
+    version="0.0.4",
     author="Chenkai Luo, Yegor Kuznetsov",
     author_email="author@example.com",
     description="A library for solving sudoku puzzles",
