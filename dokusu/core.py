@@ -164,7 +164,7 @@ class Sudoku:
             extended_depth:int -- Guess depth to use extended reduction for. 0 is best for
                                   standard sudoku, while 1 or 2 works well for difficult
                                   variants. (default: 0)
-            on_cell_update     -- Method to call whenever a cell is updated. See
+            on_cell_update:    -- Method to call whenever a cell is updated. See
                                   'Animating the Solver' in docs for usage details
 
         Returns:
