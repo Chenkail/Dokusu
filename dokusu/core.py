@@ -1,12 +1,16 @@
+import os
 from pathlib import Path
 
 import numpy as np
 
-
+from . import rules
 from .rules import *
 
 DOKUSU_DIR = Path(__file__).parent.parent
-EXPORT_DIR = DOKUSU_DIR / "exports"
+CURRENT_DIR = Path().absolute()
+EXPORT_DIR = CURRENT_DIR / "exports"
+if not os.path.isdir(EXPORT_DIR):
+    os.mkdir(EXPORT_DIR)
 
 class Sudoku:
 
