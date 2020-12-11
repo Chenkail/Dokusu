@@ -1,1 +1,1 @@
-.. autoclass:: Sudoku
+.. automodule:: dokusu
