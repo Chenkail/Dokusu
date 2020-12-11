@@ -27,7 +27,7 @@ For example, to define a rule saying that a certain cell must be greater than a 
             self.cell_b = cell_b
 
         def reduce_possibilities(self, sudoku, extended=False):
-            # `cell_a` > `cell_b` implies `cell_b` can't be greater than the max value for `cell_a`
+            # `cell_a` > `cell_b` implies `cell_b` is less than the max value for `cell_a`
             max_a = sudoku.possibilities[self.cell_a].nonzero()[0].max()
             sudoku.possibilities[self.cell_b, max_a:] = False
 

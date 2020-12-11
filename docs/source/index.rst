@@ -8,4 +8,5 @@ Dokusu documentation
    installation
    quickstart
    custom-rules
+   animating
 

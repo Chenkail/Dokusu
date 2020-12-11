@@ -14,7 +14,18 @@ if not os.path.isdir(EXPORT_DIR):
 
 class Sudoku:
 
-    def __init__(self, board, possibilities=None, rules=None):
+    def __init__(self, board:np.ndarray, possibilities:np.ndarray=None, rules:list=None):
+        """
+        Initialize a new Sudoku puzzle given an numpy array as the board.
+
+        Args:
+            board:np.ndarray         -- The (N^2, N^2) shape board to initialize with
+            possibilities:np.ndarray -- (optional) possibilities to set at the start
+                                        (default: (N^2, N^2, N^2) shape ndarray of all True)
+            rules:list               -- (optional) rules to use for solving this sudoku
+                                        (default: standard sudoku rules)
+        """
+
         self.board_size = board.shape[0]
         self.block_size = int(np.sqrt(self.board_size)) 
         self.start_board = board.copy()
@@ -26,13 +37,22 @@ class Sudoku:
             self.possibilities = possibilities
 
         if rules is None:
+            # TODO: create a `BaseSudokuRule` Rule that contains all the base rules
             self.rules = Sudoku.base_rules(self.board_size, self.block_size)
         else:
             self.rules = rules
 
 
     @staticmethod
-    def base_rules(board_size, block_size):
+    def base_rules(board_size:int, block_size:int):
+        """
+        Returns valid rules for a basic N^2xN^2 game of Sudoku
+
+        Args:
+            board_size:int -- The size of the board. For normal sudoku, this is 9
+            block_size:int -- The size of a sudoku block. For normal sudoku, this is 3
+        """
+
         def select_box(block):
             x, y = block%block_size, block//block_size
             return slice(block_size*y, block_size*(y+1)), slice(block_size*x, block_size*(x+1))
@@ -47,13 +67,18 @@ class Sudoku:
         ]
 
     @staticmethod
-    def from_file(path):
+    def from_file(path:str):
         """
-        Read a sudoku puzzle from a file
+        Load a sudoku puzzle from a file
+
+        Args:
+            path:str -- The path to the file to load from
+        
+        Returns:
+            A sudoku instance created from that file
         """
 
         # TODO: Add import for exported files
-
         # TODO: (possibly) implement more comprehensive file loading (multiple filetypes?)
         f = open(path)
         lines = f.readlines()
@@ -75,6 +100,13 @@ class Sudoku:
     
     @staticmethod
     def sample():
+        """
+        Built-in sample sudoku
+
+        Returns:
+            A sample sudoku instance
+        """
+
         board = np.array([
             [5, 3, 0, 0, 7, 0, 0, 0, 0],
             [6, 0, 0, 1, 9, 5, 0, 0, 0],
@@ -90,9 +122,17 @@ class Sudoku:
 
     @staticmethod
     def sample16():
+        """
+        load a sample 16x16 puzzle
+        """
         return Sudoku.from_file('./sample_puzzles/sample16.csv')
 
     def copy(self):
+        """
+        Creates a copy of a Sudoku object by duplicating the board, 
+        possibilities, and rules
+        """
+
         return Sudoku(
             self.board.copy(),
             self.possibilities.copy(),
@@ -100,18 +140,32 @@ class Sudoku:
         )
 
     def reset(self):
+        """
+        Reset the board and possibilities to be like they were when this sudoku was created
+        """
+
         self.possibilities = np.ones(
                 (self.board_size, self.board_size, self.board_size), dtype=bool)
         self.board = self.start_board
 
 
-    def solve(self, log_guessing=False, log_indent="",
-              extended_depth=0, on_cell_update=None):
+    def solve(self, log_guessing:bool=False, log_indent:str="",
+              extended_depth:int=0, on_cell_update=None):
         """
         Solve the current sudoku puzzle.
 
+        Args:
+            log_guessing:bool  -- Should all guesses be logged? (default: False)
+            log_indent:str     -- Current indentation level for guess logging. Only used
+                                  internally, can be safely ignored.
+            extended_depth:int -- Guess depth to use extended reduction for. 0 is best for
+                                  standard sudoku, while 1 or 2 works well for difficult
+                                  variants. (default: 0)
+            on_cell_update     -- Method to call whenever a cell is updated. See
+                                  'Animating the Solver' in docs for usage details
+
         Returns:
-            np.ndarray of shape (N, N) representing the solution or None if no solution found
+            self if a solution was found or None if no solution found
         """
         
         solved = self.solve_until_stuck(on_cell_update, extended=False)
@@ -158,9 +212,18 @@ class Sudoku:
         return None
 
     def solve_until_stuck(self, on_cell_update, extended=False):
+        """
+        Tries to solve the sudoku puzzle until it gets stuck
+
+        Args:
+            on_cell_update -- Method to call whenever a cell is updated. See
+                              'Animating the Solver' in docs for usage details
+            extended:bool  -- Flag controlling extended reduction usage.
+
+        Returns:
+            False if it got stuck/failed, True if it found a solution
+        """
         
-        # return False if it got stuck/failed,
-        # return True if it solved it
         stuck = False
         while not stuck:
             stuck = self.solve_step(on_cell_update, extended=extended)
@@ -175,6 +238,20 @@ class Sudoku:
 
 
     def solve_step(self, on_cell_update=None, extended=False):
+        """
+        Tries to solve the sudoku puzzle until it gets stuck
+
+        Args:
+            on_cell_update -- Method to call whenever a cell is updated. See
+                              'Animating the Solver' in docs for usage details
+            extended:bool  -- Flag controlling extended reduction usage.
+
+        Returns:
+            Is it stuck?
+
+            True if stuck, False if it isn't stuck
+        """
+
         pre_possibilities = self.possibilities.copy()
         self.possibilities_reduction(extended=extended)
         if on_cell_update is not None:
@@ -192,12 +269,21 @@ class Sudoku:
 
 
     def full_redraw(self, on_cell_update=None):
+        """
+        'Update' every cell in the board to reset it to the current state of the board.
+        """
         if on_cell_update is not None:
             for pos in np.argwhere(self.board > -1):
                 on_cell_update(self, pos)
 
     
     def calculate_restriction(self):
+        """
+        Calculate how restricted each possibility is.
+
+        Returns:
+            (N, N, N) np.ndarray of per-possibility restriction estimates
+        """
         restriction = np.zeros_like(self.possibilities, dtype=float)
         for rule in self.rules:
             rule.restriction_estimate(self, restriction)
@@ -223,6 +309,7 @@ class Sudoku:
         """
         Solve the sudoku with an assumed square.
         """
+
         i, j, p_index = guess
         if log_guessing:
             print(f'{log_indent}guess: {p_index+1} at {(i, j)}')
@@ -241,8 +328,8 @@ class Sudoku:
 
     def find_solvable(self):
         """
-        Given a set of the possible values for each cell, convert that to a board of definitely
-        known cell values based on a set of rules.
+        Given a set of the possible values for each cell, convert that to a 
+        board of definitely known cell values based on a set of rules.
 
         Returns:
             np.ndarray of shape (N, N)
@@ -267,8 +354,6 @@ class Sudoku:
         Theoretically, it could be done with a simple check on `self.possibilities`, but
         then this method wouldn't be able to catch any issues with it.
         """
-        #if not self.board_done():
-            #return False
 
         for rule in self.rules:
             if not rule.verify(self):
@@ -317,7 +402,7 @@ class Sudoku:
 
     def compare(self, other):
         """
-        Compares two Sudoku objects and returns true if they have the same board state
+        Compares two Sudoku objects and returns True if they have the same board state
         """
 
         return np.array_equal(self.board, other.board)

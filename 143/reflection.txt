@@ -1,11 +1,36 @@
 What did you learn during this project?
-
-
 What did you enjoy during this project?
-
-
 What did you find challenging or frustrating during this project?
-
-
 What did you find particularly helpful for your learning during this project?
 
+While working on this project, we learned a lot about optimization and 
+refactoring. For example, we rewrote the rules implementations multiple times, 
+each time improving some part that either prevented us from extending the 
+library's capabilities, or which was not as efficient as it could be. We also 
+learned how to divide the work based on each team member's capabilities and 
+previous knowledge. For example, one partner handled much of the numpy related 
+tasks, while the other packaged it for PyPI so that it could be installed through pip
+and set up the documentation and published it to readthedocs.
+
+One thing that was a lot of fun was finding ways to extend the library to solve 
+different sudoku variants. We started by solving the base 9x9 puzzle, then from 
+there we moved to solving puzzles of dimension N^2 by N^2, where N is any 
+integer. We then expanded to allowing user-defined rules, which opened up a lot 
+more possibilities for the range of puzzles we could solve with the library. 
+From there it was easy to implement anti-knight sudoku and diagonal sudoku. 
+Implementing diagonal sudoku puzzles was even easier after adding the 
+UniqueRule class, which simply checks all cells in a slice to ensure there 
+aren't any duplicates. Killer cages were a lot more work than originally anticipated,
+since just setting up the restrictions and simple possible digits filtering
+(surprisingly) isn't viable. The key to getting them to work was by estimating how
+restricted cells are based on comparing the target sum to the minimum/maximum 
+possible sum. Once it worked, it was particularly satisfying.
+
+There weren't too many frustrations when working on this project, as for each 
+of the tools being used for the project at least one of us was familiar with 
+their usage. This allowed us to focus more on the implementation than trying 
+to learn new things from scratch. The most helpful thing for our learning was 
+probably just experimenting with code and testing to see if it worked, then
+repeating from there. Also, we weren't afraid of fairly sizable iterations on
+the overall structure of the library, so we didn't end up locked in a certain
+way of doing things.

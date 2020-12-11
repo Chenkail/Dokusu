@@ -3,6 +3,9 @@ from itertools import permutations
 
 class Rule:
     def reduce_possibilities(self, sudoku, extended=False):
+        """
+        Remove options from the possibilities array that don't fit the rule
+        """
         raise NotImplementedError
 
     def find_solvable(self, sudoku):
@@ -26,6 +29,11 @@ class Rule:
         pass
 
 class UniqueRule(Rule):
+    """
+    A class of rule specifically for rules where none of the cells in a 
+    certain group can contain duplicate values (e.g. the rows/columns/boxes in
+    vanilla sudoku)
+    """
 
     index_sets = {}
 
@@ -42,6 +50,13 @@ class UniqueRule(Rule):
         self.strong = strong
 
     def reduce_possibilities(self, sudoku, extended=False):
+        """
+        Clears possibilities corresponding to duplicate values for cells in the slice.
+
+        if `extended`=True, it also checks for N-groups with N possibilities between them, and
+        uses that to further reduce other possibilities.
+        """
+
         board_subset = sudoku.board[self.subset]
         possibilities_subset = sudoku.possibilities[self.subset]
 
@@ -58,7 +73,6 @@ class UniqueRule(Rule):
                 sudoku.possibilities[(*self.indices[board_indices].T, remove_possibility)] = False
 
         if extended:
-            # TODO: make this work with indices lists too, rather than just slices
             # if a N-subset of a unique set has N or less options, it contains all those options.
             row_b = sudoku.board[self.subset]
             row_p = sudoku.possibilities[self.subset]
@@ -109,31 +123,16 @@ class UniqueRule(Rule):
             p_subset = sudoku.possibilities[self.subset]
 
             counts = p_subset.sum(axis=0)
-
             locations = p_subset.argmax(0)[counts == 1]
             values = np.nonzero(counts == 1)[0] + 1
 
             b_subset[locations] = values
 
     def verify(self, sudoku):
-        #if self.strong:
-            #target = set(range(sudoku.board_size))
-            #actual = set(sudoku.board[self.subset].flatten() + 1)
-            #return target != actual
-        #else:
-        #    flat = sudoku.board[self.subset].flatten()
-        #    return len(set(flat)) == len(flat)
-
         flat = sudoku.board[self.subset].flatten()
         nonzero = flat[flat != 0]
-        #unique = len(set(flat)) == len(flat)
         unique = len(set(nonzero)) == len(nonzero)
         return unique
-        #has_all = 
-
-        #target = set(range(sudoku.board_size))
-        #actual = set(flat + 1)
-        #return target != actual
 
     def __repr__(self):
         name = type(self).__name__
@@ -162,9 +161,12 @@ class SingleRule(Rule):
 
     def restriction_estimate(self, sudoku, restriction):
         restriction += 1 / sudoku.possibilities.sum(-1).reshape((9,9,1))
-        #restriction -= 1000 * (sudoku.board > 0).reshape(9, 9, 1)
         
 class AntiKnightRule(Rule):
+    """
+    Defines the rule where no two cells within one knight's move of each other 
+    can share a value.
+    """
 
     KNIGHT_MOVES = np.array([
         [1, 2], [1, -2], [-1, 2], [-1, -2],
@@ -197,6 +199,11 @@ class AntiKnightRule(Rule):
         return True
 
 class KillerCageRule(UniqueRule):
+    """
+    Defines the rules for Killer Cage sudoku puzzles, where the numbers in 
+    each cage must sum to the specified total
+    """
+    
     digits_cache = {}
 
     def __init__(self, indices, sum):
@@ -297,9 +304,6 @@ class KillerCageRule(UniqueRule):
 
         return possible
         
-        #match_sum = sudoku.board[self.subset].sum() == self.sum
-        #match_unique = super(KillerCageRule, self).verify(sudoku)
-        #return match_sum and match_unique
 
     def restriction_estimate(self, sudoku, restriction):
         # number of unsolved cells left
